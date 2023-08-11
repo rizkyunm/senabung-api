@@ -1,18 +1,23 @@
 package database
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"github.com/go-sql-driver/mysql"
 	"github.com/rizkyunm/senabung-api/campaign"
 	"github.com/rizkyunm/senabung-api/transaction"
 	"github.com/rizkyunm/senabung-api/user"
-	"gorm.io/driver/mysql"
+	gormMysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"log"
 	"os"
+	"time"
 )
 
 var (
-	dbHost, dbUser, dbPass, dbName string
-	db                             *gorm.DB
+	dbHost, dbUser, dbPass, dbName, certPath string
+	db                                       *gorm.DB
 )
 
 func newClient() *gorm.DB {
@@ -22,9 +27,39 @@ func newClient() *gorm.DB {
 	dbUser = os.Getenv("DB_USER")
 	dbPass = os.Getenv("DB_PASS")
 	dbName = os.Getenv("DB_NAME")
+	certPath = os.Getenv("CERT_PATH")
 
-	dsn := dbUser + ":" + dbPass + "@tcp(" + dbHost + ":3306)/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+	dir, _ := os.Getwd()
+
+	rootCertPool := x509.NewCertPool()
+	pem, err := os.ReadFile(dir + certPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		log.Fatal("Failed to append PEM.")
+	}
+
+	mysql.RegisterTLSConfig("custom", &tls.Config{
+		RootCAs: rootCertPool,
+	})
+
+	// try to connect to mysql database.
+	cfg := mysql.Config{
+		User:                 dbUser,
+		Passwd:               dbPass,
+		Addr:                 dbHost + ":3306",
+		Net:                  "tcp",
+		DBName:               dbName,
+		Loc:                  time.Local,
+		AllowNativePasswords: true,
+	}
+
+	cfg.TLSConfig = "custom"
+
+	str := cfg.FormatDSN()
+
+	db, err = gorm.Open(gormMysql.Open(str), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Error),
 	})
 
