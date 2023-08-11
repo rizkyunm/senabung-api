@@ -1,28 +1,27 @@
 package main
 
 import (
+	"github.com/rizkyunm/senabung-api/driver/database"
+	"github.com/rizkyunm/senabung-api/driver/mail"
+	"github.com/rizkyunm/senabung-api/driver/storage"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
-	"crowdfunding-web/auth"
-	"crowdfunding-web/campaign"
-	"crowdfunding-web/handler"
-	"crowdfunding-web/helper"
-	"crowdfunding-web/payment"
-	"crowdfunding-web/transaction"
-	"crowdfunding-web/user"
+	"github.com/rizkyunm/senabung-api/auth"
+	"github.com/rizkyunm/senabung-api/campaign"
+	"github.com/rizkyunm/senabung-api/handler"
+	"github.com/rizkyunm/senabung-api/helper"
+	"github.com/rizkyunm/senabung-api/payment"
+	"github.com/rizkyunm/senabung-api/transaction"
+	"github.com/rizkyunm/senabung-api/user"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -32,21 +31,10 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	dbHost := os.Getenv("DB_HOST")
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
-	dbName := os.Getenv("DB_NAME")
+	db := database.GetDB()
 
-	dsn := dbUser + ":" + dbPass + "@tcp(" + dbHost + ":3306)/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	if err = db.AutoMigrate(&campaign.Campaign{}, &campaign.CampaignImage{}, &user.User{}, &transaction.Transaction{}); err != nil {
-		log.Fatal(err.Error())
-	}
+	_ = storage.GetStorageClient()
+	_ = mail.GetMail()
 
 	userRepository := user.NewRepository(db)
 	campaignRepository := campaign.NewRepository(db)
@@ -62,8 +50,9 @@ func main() {
 	campaignHandler := handler.NewCampaignHandler(campaignService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 
+	gin.SetMode(os.Getenv("GIN_MODE"))
+
 	router := gin.Default()
-	router.HTMLRender = loadTemplates("./templates")
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -84,13 +73,16 @@ func main() {
 	api.POST("/sessions", userHandler.Login)
 	api.POST("/email_checkers", userHandler.CheckEmailAvailability)
 	api.POST("/avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
-	api.GET("/users", authMiddleware(authService, userService), userHandler.FetchUser)
+	api.GET("/me", authMiddleware(authService, userService), userHandler.FetchUser)
+	api.GET("/users", authMiddleware(authService, userService), userHandler.GetUsers)
+	api.GET("/users/:id", authMiddleware(authService, userService), userHandler.GetUser)
 
 	// campaign Handler
 	api.GET("/campaigns", campaignHandler.GetCampaigns)
 	api.GET("/campaigns/:id", campaignHandler.GetCampaign)
 	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
 	api.PUT("/campaigns/:id", authMiddleware(authService, userService), campaignHandler.UpdateCampaign)
+	api.POST("/campaign-images", authMiddleware(authService, userService), campaignHandler.UploadCampaignImage)
 
 	// transaction Handler
 	api.GET("/campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetCampaignTransactions)
@@ -99,19 +91,7 @@ func main() {
 	api.POST("/transactions/notification", transactionHandler.GetNotification)
 
 	router.Run()
-
-	//input dari user
-	//handler : mapping input dari user -> struct input
-	//service : melakukan mapping dari struct input -> struct user
-	//repository
-	//db
 }
-
-// get value header authorization : Bearer token
-// validate token
-// get user ID
-// get user data from db according to user ID from service
-// set context which contain user
 
 func authMiddleware(authService auth.Service, userService user.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -144,7 +124,7 @@ func authMiddleware(authService auth.Service, userService user.Service) gin.Hand
 			return
 		}
 
-		userID := int(claim["user_id"].(float64))
+		userID := uint(claim["user_id"].(float64))
 
 		user, err := userService.GetUserByID(userID)
 		if err != nil {
@@ -155,27 +135,4 @@ func authMiddleware(authService auth.Service, userService user.Service) gin.Hand
 
 		c.Set("current_user", user)
 	}
-}
-
-func loadTemplates(templatesDir string) multitemplate.Renderer {
-	r := multitemplate.NewRenderer()
-
-	layouts, err := filepath.Glob(templatesDir + "/layouts/*.html")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	includes, err := filepath.Glob(templatesDir + "/includes/*.html")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// Generate our templates map from our layouts/ and includes/ directories
-	for _, include := range includes {
-		layoutCopy := make([]string, len(layouts))
-		copy(layoutCopy, layouts)
-		files := append(layoutCopy, include)
-		r.AddFromFiles(filepath.Base(include), files...)
-	}
-	return r
 }

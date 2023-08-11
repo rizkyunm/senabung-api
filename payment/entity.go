@@ -1,6 +1,6 @@
 package payment
 
 type Transaction struct {
-	ID     int
-	Amount int
+	ID     uint
+	Amount float64 `gorm:"type:decimal(10,2)"`
 }

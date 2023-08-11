@@ -8,7 +8,7 @@ import (
 )
 
 type Service interface {
-	GetCampaigns(userID int) ([]Campaign, error)
+	GetCampaigns(userID uint) ([]Campaign, error)
 	GetCampaign(input GetCampaignDetailInput) (Campaign, error)
 	CreateCampaign(input CreateCampaignInput) (Campaign, error)
 	UpdateCampaign(inputID GetCampaignDetailInput, inputData CreateCampaignInput) (Campaign, error)
@@ -23,7 +23,7 @@ func NewService(repository Repository) *service {
 	return &service{repository}
 }
 
-func (s *service) GetCampaigns(userID int) ([]Campaign, error) {
+func (s *service) GetCampaigns(userID uint) ([]Campaign, error) {
 	if userID == 0 {
 		campaigns, err := s.repository.FindAll()
 		if err != nil {

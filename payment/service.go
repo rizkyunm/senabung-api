@@ -1,7 +1,7 @@
 package payment
 
 import (
-	"crowdfunding-web/user"
+	"github.com/rizkyunm/senabung-api/user"
 	"os"
 	"strconv"
 
@@ -20,10 +20,12 @@ func NewService() *service {
 }
 
 func (s *service) GetPaymentURL(transaction Transaction, user user.User) (string, error) {
+	midenv, _ := strconv.Atoi(os.Getenv("MIDTRANS_ENVIRONMENT_TYPE"))
+
 	midclient := midtrans.NewClient()
 	midclient.ServerKey = os.Getenv("MIDTRANS_SERVER_KEY")
 	midclient.ClientKey = os.Getenv("MIDTRANS_CLIENT_KEY")
-	midclient.APIEnvType = midtrans.Sandbox
+	midclient.APIEnvType = midtrans.EnvironmentType(midenv)
 
 	snapGateway := midtrans.SnapGateway{
 		Client: midclient,
@@ -35,7 +37,7 @@ func (s *service) GetPaymentURL(transaction Transaction, user user.User) (string
 			FName: user.Name,
 		},
 		TransactionDetails: midtrans.TransactionDetails{
-			OrderID:  strconv.Itoa(transaction.ID),
+			OrderID:  strconv.Itoa(int(transaction.ID)),
 			GrossAmt: int64(transaction.Amount),
 		},
 	}

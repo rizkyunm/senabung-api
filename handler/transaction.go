@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"crowdfunding-web/helper"
-	"crowdfunding-web/transaction"
-	"crowdfunding-web/user"
+	"github.com/rizkyunm/senabung-api/helper"
+	"github.com/rizkyunm/senabung-api/transaction"
+	"github.com/rizkyunm/senabung-api/user"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -34,8 +34,7 @@ func (h *transactionHandler) GetCampaignTransactions(c *gin.Context) {
 		return
 	}
 
-	currentUser := c.MustGet("current_user").(user.User)
-	input.User = currentUser
+	input.User = c.MustGet("current_user").(user.User)
 
 	transactions, err := h.service.GetTransactionsByCampaignID(input)
 	if err != nil {

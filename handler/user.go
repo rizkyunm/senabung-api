@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"crowdfunding-web/auth"
-	"crowdfunding-web/helper"
-	"crowdfunding-web/user"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/rizkyunm/senabung-api/auth"
+	"github.com/rizkyunm/senabung-api/helper"
+	"github.com/rizkyunm/senabung-api/user"
 	"net/http"
 )
 
@@ -74,6 +74,13 @@ func (h *userHandler) Login(c *gin.Context) {
 		return
 	}
 
+	role := c.Query("role")
+	if role != "admin" {
+		role = "client"
+	}
+
+	input.Role = user.Role(role)
+
 	loggedInUser, err := h.userService.Login(input)
 	if err != nil {
 		errorMessage := gin.H{"errors": err.Error()}
@@ -83,9 +90,17 @@ func (h *userHandler) Login(c *gin.Context) {
 		return
 	}
 
+	if loggedInUser.ID == 0 || loggedInUser.Role != input.Role {
+		errorMessage := gin.H{"errors": "user not found"}
+
+		response := helper.APIResponse("Login failed", http.StatusNotFound, "error", errorMessage)
+		c.JSON(http.StatusNotFound, response)
+		return
+	}
+
 	token, err := h.authService.GenerateToken(loggedInUser.ID)
 	if err != nil {
-		response := helper.APIResponse("Register account failed", http.StatusBadRequest, "error", nil)
+		response := helper.APIResponse("Login failed", http.StatusBadRequest, "error", nil)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
@@ -187,6 +202,36 @@ func (h *userHandler) FetchUser(c *gin.Context) {
 	formatter := user.FormatUser(currentUser, "")
 
 	response := helper.APIResponse("Successfully fetch user data", http.StatusOK, "success", formatter)
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *userHandler) GetUsers(c *gin.Context) {
+	users, err := h.userService.GetUsers()
+	if err != nil {
+		response := helper.APIResponse("Can't get users", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := user.FormatUsers(users)
+
+	response := helper.APIResponse("List of users", http.StatusOK, "success", formatter)
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *userHandler) GetUser(c *gin.Context) {
+	users, err := h.userService.GetUsers()
+	if err != nil {
+		response := helper.APIResponse("Can't get users", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	formatter := user.FormatUsers(users)
+
+	response := helper.APIResponse("List of users", http.StatusOK, "success", formatter)
 
 	c.JSON(http.StatusOK, response)
 }

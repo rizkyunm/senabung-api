@@ -1,15 +1,15 @@
 package transaction
 
 import (
-	"crowdfunding-web/campaign"
-	"crowdfunding-web/payment"
 	"errors"
+	"github.com/rizkyunm/senabung-api/campaign"
+	"github.com/rizkyunm/senabung-api/payment"
 	"strconv"
 )
 
 type Service interface {
 	GetTransactionsByCampaignID(input GetCampaignTransactionsInput) ([]Transaction, error)
-	GetTransactionsByUserID(userID int) ([]Transaction, error)
+	GetTransactionsByUserID(userID uint) ([]Transaction, error)
 	CreateTransaction(input CreateTransactionInput) (Transaction, error)
 	ProcessPayment(input TransactionNotificationInput) error
 }
@@ -46,7 +46,7 @@ func (s *service) GetTransactionsByCampaignID(input GetCampaignTransactionsInput
 	return transactions, nil
 }
 
-func (s *service) GetTransactionsByUserID(userID int) ([]Transaction, error) {
+func (s *service) GetTransactionsByUserID(userID uint) ([]Transaction, error) {
 	transactions, err := s.repository.GetByUserID(userID)
 	if err != nil {
 		return transactions, err
@@ -91,7 +91,7 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 func (s *service) ProcessPayment(input TransactionNotificationInput) error {
 	transactionID, _ := strconv.Atoi(input.OrderID)
 
-	transaction, err := s.repository.GetByID(transactionID)
+	transaction, err := s.repository.GetByID(uint(transactionID))
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (s *service) ProcessPayment(input TransactionNotificationInput) error {
 		return err
 	}
 
-	campaign, err := s.campaignRepository.FindByID(updatedTransaction.CampaignID)
+	campaign, err := s.campaignRepository.FindByID(updatedTransaction.Campaign.ID)
 	if err != nil {
 		return err
 	}

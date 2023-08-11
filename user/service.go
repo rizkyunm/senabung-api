@@ -2,7 +2,6 @@ package user
 
 import (
 	"errors"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -10,8 +9,9 @@ type Service interface {
 	RegisterUser(input RegisterUserInput) (User, error)
 	Login(input LoginInput) (User, error)
 	IsEmailAvailable(input CheckEmailInput) (bool, error)
-	SaveAvatar(ID int, fileLocation string) (User, error)
-	GetUserByID(ID int) (User, error)
+	SaveAvatar(ID uint, fileLocation string) (User, error)
+	GetUserByID(ID uint) (User, error)
+	GetUsers() ([]User, error)
 }
 
 type service struct {
@@ -24,9 +24,9 @@ func NewService(repository Repository) *service {
 
 func (s *service) RegisterUser(input RegisterUserInput) (User, error) {
 	user := User{
-		Name:       input.Name,
-		Email:      input.Email,
-		Occupation: input.Occupation,
+		Name:        input.Name,
+		Email:       input.Email,
+		PhoneNumber: input.PhoneNumber,
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.MinCost)
@@ -54,10 +54,6 @@ func (s *service) Login(input LoginInput) (User, error) {
 		return user, err
 	}
 
-	if user.ID == 0 {
-		return user, errors.New("no user found with that email")
-	}
-
 	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return user, err
 	}
@@ -80,7 +76,7 @@ func (s *service) IsEmailAvailable(input CheckEmailInput) (bool, error) {
 	return false, nil
 }
 
-func (s *service) SaveAvatar(ID int, fileLocation string) (User, error) {
+func (s *service) SaveAvatar(ID uint, fileLocation string) (User, error) {
 	user, err := s.repository.FindByID(ID)
 	if err != nil {
 		return user, err
@@ -96,7 +92,7 @@ func (s *service) SaveAvatar(ID int, fileLocation string) (User, error) {
 	return updatedUser, err
 }
 
-func (s *service) GetUserByID(ID int) (User, error) {
+func (s *service) GetUserByID(ID uint) (User, error) {
 	user, err := s.repository.FindByID(ID)
 	if err != nil {
 		return user, err
@@ -107,4 +103,13 @@ func (s *service) GetUserByID(ID int) (User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *service) GetUsers() (users []User, err error) {
+	users, err = s.repository.FindAll()
+	if err != nil {
+		return
+	}
+
+	return
 }

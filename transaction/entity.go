@@ -1,21 +1,19 @@
 package transaction
 
 import (
-	"crowdfunding-web/campaign"
-	"crowdfunding-web/user"
-	"time"
+	"github.com/rizkyunm/senabung-api/campaign"
+	"github.com/rizkyunm/senabung-api/user"
+	"gorm.io/gorm"
 )
 
 type Transaction struct {
-	ID         int
-	CampaignID int
-	UserID     int
-	Amount     int
-	Status     string
-	Code       string
-	PaymentURL string
-	User       user.User
-	Campaign   campaign.Campaign
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	gorm.Model
+	CampaignID uint
+	UserID     uint
+	Amount     float64           `gorm:"type:decimal(10,2)"`
+	Status     string            `gorm:"type:varchar(20)"`
+	Code       string            `gorm:"type:varchar(50)"`
+	PaymentURL string            `gorm:"type:varchar(255)"`
+	User       user.User         `gorm:"foreignKey:UserID"`
+	Campaign   campaign.Campaign `gorm:"foreignKey:CampaignID"`
 }

@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"crowdfunding-web/campaign"
-	"crowdfunding-web/helper"
-	"crowdfunding-web/user"
 	"fmt"
+	"github.com/rizkyunm/senabung-api/campaign"
+	"github.com/rizkyunm/senabung-api/helper"
+	"github.com/rizkyunm/senabung-api/user"
 	"net/http"
 	"strconv"
 
@@ -28,7 +28,7 @@ func (h *campaignHandler) GetCampaigns(c *gin.Context) {
 
 	userID, _ := strconv.Atoi(c.Query("user_id"))
 
-	campaigns, err := h.service.GetCampaigns(userID)
+	campaigns, err := h.service.GetCampaigns(uint(userID))
 	if err != nil {
 		response := helper.APIResponse("Can't get campaigns", http.StatusBadRequest, "error", nil)
 		c.JSON(http.StatusBadRequest, response)
@@ -54,8 +54,18 @@ func (h *campaignHandler) GetCampaign(c *gin.Context) {
 
 	campaignDetail, err := h.service.GetCampaign(input)
 	if err != nil {
-		response := helper.APIResponse("Failed to get detail of campaign", http.StatusBadRequest, "error", nil)
+		errorMessage := gin.H{"errors": []string{err.Error()}}
+
+		response := helper.APIResponse("Failed to get detail of campaign", http.StatusBadRequest, "error", errorMessage)
 		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if campaignDetail.ID == 0 {
+		errorMessage := gin.H{"errors": []string{"campaign not found"}}
+
+		response := helper.APIResponse("Campaign not found", http.StatusNotFound, "error", errorMessage)
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
 
@@ -145,7 +155,7 @@ func (h *campaignHandler) UploadCampaignImage(c *gin.Context) {
 
 	var input campaign.CreateCampaignImageInput
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+	if err := c.ShouldBind(&input); err != nil {
 		errors := helper.FormatValidationError(err)
 		errorMessage := gin.H{"errors": errors}
 
@@ -160,6 +170,7 @@ func (h *campaignHandler) UploadCampaignImage(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err != nil {
+		fmt.Println(err.Error())
 		data := gin.H{"is_uploaded": false}
 		response := helper.APIResponse("Failed to upload campaign image", http.StatusBadRequest, "error", data)
 		c.JSON(http.StatusBadRequest, response)

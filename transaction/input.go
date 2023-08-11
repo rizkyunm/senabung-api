@@ -1,15 +1,15 @@
 package transaction
 
-import "crowdfunding-web/user"
+import "github.com/rizkyunm/senabung-api/user"
 
 type GetCampaignTransactionsInput struct {
-	ID   int `json:"id" binding:"required"`
+	ID   uint `json:"id" binding:"required"`
 	User user.User
 }
 
 type CreateTransactionInput struct {
-	Amount     int `json:"amount" binding:"required"`
-	CampaignID int `json:"campaign_id" binding:"required"`
+	Amount     float64 `json:"amount" binding:"required"`
+	CampaignID uint    `json:"campaign_id" binding:"required"`
 	User       user.User
 }
 
