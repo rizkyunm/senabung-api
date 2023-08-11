@@ -53,6 +53,7 @@ func newClient() *gorm.DB {
 		DBName:               dbName,
 		Loc:                  time.Local,
 		AllowNativePasswords: true,
+		ParseTime:            true,
 	}
 
 	cfg.TLSConfig = "custom"
