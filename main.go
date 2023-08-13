@@ -35,7 +35,7 @@ func main() {
 	db := database.GetDB()
 
 	_ = storage.GetStorageClient()
-	_ = mail.GetMail()
+	_ = mail.GetDialer()
 
 	userRepository := user.NewRepository(db)
 	campaignRepository := campaign.NewRepository(db)
@@ -49,7 +49,7 @@ func main() {
 
 	userHandler := handler.NewUserHandler(userService, authService)
 	campaignHandler := handler.NewCampaignHandler(campaignService)
-	transactionHandler := handler.NewTransactionHandler(transactionService)
+	transactionHandler := handler.NewTransactionHandler(transactionService, campaignService)
 
 	gin.SetMode(os.Getenv("GIN_MODE"))
 
@@ -72,21 +72,25 @@ func main() {
 	// user Handler
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.Login)
+	api.POST("/login", userHandler.LoginAdmin)
 	api.POST("/email_checkers", userHandler.CheckEmailAvailability)
 	api.POST("/avatars", authMiddleware(authService, userService), userHandler.UploadAvatar)
 	api.GET("/me", authMiddleware(authService, userService), userHandler.FetchUser)
+	api.GET("/admin", authMiddleware(authService, userService), userHandler.FetchAdmin)
 	api.GET("/users", authMiddleware(authService, userService), userHandler.GetUsers)
 	api.GET("/users/:id", authMiddleware(authService, userService), userHandler.GetUser)
 
 	// campaign Handler
 	api.GET("/campaigns", campaignHandler.GetCampaigns)
 	api.GET("/campaigns/:id", campaignHandler.GetCampaign)
+	api.GET("/campaigns/slug/:slug", campaignHandler.GetCampaignBySlug)
 	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
 	api.PUT("/campaigns/:id", authMiddleware(authService, userService), campaignHandler.UpdateCampaign)
-	api.POST("/campaign-images", authMiddleware(authService, userService), campaignHandler.UploadCampaignImage)
+	api.POST("/campaign/:id/upload", authMiddleware(authService, userService), campaignHandler.UploadImage)
+	api.GET("/campaigns/highlight", campaignHandler.GetHighlightCampaigns)
 
 	// transaction Handler
-	api.GET("/campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetCampaignTransactions)
+	api.GET("/campaigns/:id/transactions", transactionHandler.GetCampaignTransactions)
 	api.GET("/transactions", authMiddleware(authService, userService), transactionHandler.GetUserTransactions)
 	api.POST("/transactions", authMiddleware(authService, userService), transactionHandler.CreateTransaction)
 	api.POST("/transactions/notification", transactionHandler.GetNotification)
@@ -127,13 +131,13 @@ func authMiddleware(authService auth.Service, userService user.Service) gin.Hand
 
 		userID := uint(claim["user_id"].(float64))
 
-		user, err := userService.GetUserByID(userID)
+		session, err := userService.GetUserByID(userID)
 		if err != nil {
 			response := helper.APIResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
 			return
 		}
 
-		c.Set("current_user", user)
+		c.Set("current_user", session)
 	}
 }

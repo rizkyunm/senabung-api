@@ -16,4 +16,5 @@ type Transaction struct {
 	PaymentURL string            `gorm:"type:varchar(255)"`
 	User       user.User         `gorm:"foreignKey:UserID"`
 	Campaign   campaign.Campaign `gorm:"foreignKey:CampaignID"`
+	OrderNo    string            `gorm:"type:varchar(50);index"`
 }

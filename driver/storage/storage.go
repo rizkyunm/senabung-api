@@ -41,3 +41,7 @@ func GetStorageClient() *azblob.Client {
 func GetContainerName() string {
 	return containerName
 }
+
+func GetAccountName() string {
+	return accountName
+}

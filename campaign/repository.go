@@ -6,10 +6,10 @@ type Repository interface {
 	FindAll() ([]Campaign, error)
 	FindByUserID(userID uint) ([]Campaign, error)
 	FindByID(ID uint) (Campaign, error)
+	FindBySlug(slug string) (Campaign, error)
 	Save(campaign Campaign) (Campaign, error)
 	Update(campaign Campaign) (Campaign, error)
-	CreateImage(campaignImage CampaignImage) (CampaignImage, error)
-	MarkAllImagesAsNonPrimary(campaignID uint) (bool, error)
+	GetHighlight() ([]Campaign, error)
 }
 
 type repository struct {
@@ -23,7 +23,17 @@ func NewRepository(db *gorm.DB) *repository {
 func (r *repository) FindAll() ([]Campaign, error) {
 	var campaigns []Campaign
 
-	if err := r.db.Preload("CampaignImages", "campaign_images.is_primary = 1").Find(&campaigns).Error; err != nil {
+	if err := r.db.Find(&campaigns).Error; err != nil {
+		return campaigns, err
+	}
+
+	return campaigns, nil
+}
+
+func (r *repository) GetHighlight() ([]Campaign, error) {
+	var campaigns []Campaign
+
+	if err := r.db.Find(&campaigns).Limit(6).Order("created_at desc").Error; err != nil {
 		return campaigns, err
 	}
 
@@ -33,7 +43,7 @@ func (r *repository) FindAll() ([]Campaign, error) {
 func (r *repository) FindByUserID(userID uint) ([]Campaign, error) {
 	var campaigns []Campaign
 
-	if err := r.db.Where("user_id = ?", userID).Preload("CampaignImages", "campaign_images.is_primary = 1").Find(&campaigns).Error; err != nil {
+	if err := r.db.Where("user_id = ?", userID).Find(&campaigns).Error; err != nil {
 		return campaigns, err
 	}
 
@@ -43,7 +53,17 @@ func (r *repository) FindByUserID(userID uint) ([]Campaign, error) {
 func (r *repository) FindByID(ID uint) (Campaign, error) {
 	var campaign Campaign
 
-	if err := r.db.Where("id = ?", ID).Preload("User").Preload("CampaignImages").Find(&campaign).Error; err != nil {
+	if err := r.db.Where("id = ?", ID).Preload("User").Find(&campaign).Error; err != nil {
+		return campaign, err
+	}
+
+	return campaign, nil
+}
+
+func (r *repository) FindBySlug(slug string) (Campaign, error) {
+	var campaign Campaign
+
+	if err := r.db.Where("slug = ?", slug).Preload("User").Find(&campaign).Error; err != nil {
 		return campaign, err
 	}
 
@@ -64,20 +84,4 @@ func (r *repository) Update(campaign Campaign) (Campaign, error) {
 	}
 
 	return campaign, nil
-}
-
-func (r *repository) CreateImage(campaignImage CampaignImage) (CampaignImage, error) {
-	if err := r.db.Create(&campaignImage).Error; err != nil {
-		return campaignImage, err
-	}
-
-	return campaignImage, nil
-}
-
-func (r *repository) MarkAllImagesAsNonPrimary(campaignID uint) (bool, error) {
-	if err := r.db.Model(&CampaignImage{}).Where("campaign_id = ?", campaignID).Update("is_primary", false).Error; err != nil {
-		return false, err
-	}
-
-	return true, nil
 }

@@ -2,6 +2,7 @@ package user
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"gorm.io/gorm"
 )
 
@@ -22,12 +23,16 @@ func (r Role) Value() (driver.Value, error) {
 }
 
 func (r *Role) UnmarshalJSON(bytes []byte) error {
-	*r = Role(bytes)
+	var str string
+	if err := json.Unmarshal(bytes, &str); err != nil {
+		return err
+	}
+	*r = Role(str)
 	return nil
 }
 
 func (r Role) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + string(r) + `"`), nil
+	return json.Marshal(string(r))
 }
 
 type User struct {

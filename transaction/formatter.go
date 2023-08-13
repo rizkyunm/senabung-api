@@ -4,8 +4,10 @@ import "time"
 
 type CampaignTransactionFormatter struct {
 	ID        uint      `json:"id"`
+	OrderNo   string    `json:"order_no"`
 	Name      string    `json:"name"`
 	Amount    float64   `json:"amount"`
+	Donor     string    `json:"donor"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -15,6 +17,8 @@ func FormatCampaignTransaction(transaction Transaction) CampaignTransactionForma
 		ID:        transaction.ID,
 		Name:      transaction.User.Name,
 		Amount:    transaction.Amount,
+		Donor:     transaction.User.Name,
+		OrderNo:   transaction.OrderNo,
 		CreatedAt: transaction.CreatedAt,
 	}
 
@@ -37,33 +41,33 @@ func FormatCampaignTransactions(transactions []Transaction) []CampaignTransactio
 }
 
 type UserTransactionFormatter struct {
-	ID        uint              `json:"id"`
-	Amount    float64           `json:"amount"`
-	Status    string            `json:"status"`
-	CreatedAt time.Time         `json:"created_at"`
-	Campaign  CampaignFormatter `json:"campaign"`
+	ID         uint              `json:"id"`
+	OrderNo    string            `json:"order_no"`
+	Amount     float64           `json:"amount"`
+	Status     string            `json:"status"`
+	PaymentURL string            `json:"payment_url"`
+	CreatedAt  time.Time         `json:"created_at"`
+	Campaign   CampaignFormatter `json:"campaign"`
 }
 
 type CampaignFormatter struct {
-	Name     string `json:"name"`
-	ImageURL string `json:"image_url"`
+	Name          string `json:"name"`
+	CampaignImage string `json:"campaign_image"`
 }
 
 func FormatUserTransaction(transaction Transaction) UserTransactionFormatter {
 	userTransactionFormatter := UserTransactionFormatter{
-		ID:        transaction.ID,
-		Amount:    transaction.Amount,
-		Status:    transaction.Status,
-		CreatedAt: transaction.CreatedAt,
+		ID:         transaction.ID,
+		OrderNo:    transaction.OrderNo,
+		Amount:     transaction.Amount,
+		Status:     transaction.Status,
+		PaymentURL: transaction.PaymentURL,
+		CreatedAt:  transaction.CreatedAt,
 	}
 
 	campaignFormatter := CampaignFormatter{
-		Name:     transaction.Campaign.Name,
-		ImageURL: "",
-	}
-
-	if len(transaction.Campaign.CampaignImages) > 0 {
-		campaignFormatter.ImageURL = transaction.Campaign.CampaignImages[0].FileName
+		Name:          transaction.Campaign.Name,
+		CampaignImage: transaction.Campaign.CampaignImage,
 	}
 
 	userTransactionFormatter.Campaign = campaignFormatter
@@ -88,6 +92,7 @@ func FormatUserTransactions(transactions []Transaction) []UserTransactionFormatt
 
 type TransactionFormatter struct {
 	ID         uint    `json:"id"`
+	OrderNo    string  `json:"order_no"`
 	CampaignID uint    `json:"campaign_id"`
 	UserID     uint    `json:"user_id"'`
 	Amount     float64 `json:"amount"`
@@ -99,6 +104,7 @@ type TransactionFormatter struct {
 func FormatTransaction(transaction Transaction) TransactionFormatter {
 	campaignTransactionFormatter := TransactionFormatter{
 		ID:         transaction.ID,
+		OrderNo:    transaction.OrderNo,
 		CampaignID: transaction.CampaignID,
 		UserID:     transaction.UserID,
 		Amount:     transaction.Amount,

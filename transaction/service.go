@@ -1,17 +1,18 @@
 package transaction
 
 import (
-	"errors"
 	"github.com/rizkyunm/senabung-api/campaign"
+	"github.com/rizkyunm/senabung-api/helper"
 	"github.com/rizkyunm/senabung-api/payment"
-	"strconv"
 )
 
 type Service interface {
 	GetTransactionsByCampaignID(input GetCampaignTransactionsInput) ([]Transaction, error)
 	GetTransactionsByUserID(userID uint) ([]Transaction, error)
+	GetTransactionByID(trxID uint) (Transaction, error)
+	GetTransactionByOrderID(orderNo string) (Transaction, error)
 	CreateTransaction(input CreateTransactionInput) (Transaction, error)
-	ProcessPayment(input TransactionNotificationInput) error
+	ProcessPayment(input TransactionNotificationInput, transaction Transaction) error
 }
 
 type service struct {
@@ -25,25 +26,30 @@ func NewService(repository Repository, campaignRepository campaign.Repository, p
 }
 
 func (s *service) GetTransactionsByCampaignID(input GetCampaignTransactionsInput) ([]Transaction, error) {
-
-	// get campaign
-	// check campaign.User.ID := user.ID which do a request
-
-	campaign, err := s.campaignRepository.FindByID(input.ID)
-	if err != nil {
-		return []Transaction{}, err
-	}
-
-	if campaign.UserID != input.User.ID {
-		return []Transaction{}, errors.New("not an author of the campaign")
-	}
-
 	transactions, err := s.repository.GetByCampaignID(input.ID)
 	if err != nil {
 		return transactions, err
 	}
 
 	return transactions, nil
+}
+
+func (s *service) GetTransactionByID(trxID uint) (Transaction, error) {
+	transaction, err := s.repository.GetByID(trxID)
+	if err != nil {
+		return transaction, err
+	}
+
+	return transaction, nil
+}
+
+func (s *service) GetTransactionByOrderID(orderNo string) (Transaction, error) {
+	transaction, err := s.repository.GetByOrderID(orderNo)
+	if err != nil {
+		return transaction, err
+	}
+
+	return transaction, nil
 }
 
 func (s *service) GetTransactionsByUserID(userID uint) ([]Transaction, error) {
@@ -56,11 +62,14 @@ func (s *service) GetTransactionsByUserID(userID uint) ([]Transaction, error) {
 }
 
 func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, error) {
+	orderNo := helper.GenerateOrderID(input.CampaignID)
+
 	transaction := Transaction{
 		CampaignID: input.CampaignID,
 		Amount:     input.Amount,
 		UserID:     input.User.ID,
 		Status:     "pending",
+		OrderNo:    orderNo,
 	}
 
 	newTransaction, err := s.repository.Save(transaction)
@@ -69,7 +78,7 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 	}
 
 	paymentTransaction := payment.Transaction{
-		ID:     newTransaction.ID,
+		ID:     newTransaction.OrderNo,
 		Amount: newTransaction.Amount,
 	}
 
@@ -88,14 +97,7 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 	return newTransaction, nil
 }
 
-func (s *service) ProcessPayment(input TransactionNotificationInput) error {
-	transactionID, _ := strconv.Atoi(input.OrderID)
-
-	transaction, err := s.repository.GetByID(uint(transactionID))
-	if err != nil {
-		return err
-	}
-
+func (s *service) ProcessPayment(input TransactionNotificationInput, transaction Transaction) error {
 	if input.PaymentType == "credit_card" && input.TransactionStatus == "capture" && input.FraudStatus == "accept" {
 		transaction.Status = "paid"
 	} else if input.TransactionStatus == "settlement" {

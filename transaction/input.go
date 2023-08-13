@@ -3,7 +3,7 @@ package transaction
 import "github.com/rizkyunm/senabung-api/user"
 
 type GetCampaignTransactionsInput struct {
-	ID   uint `json:"id" binding:"required"`
+	ID   uint `uri:"id" binding:"required"`
 	User user.User
 }
 
@@ -18,4 +18,6 @@ type TransactionNotificationInput struct {
 	OrderID           string `json:"order_id"`
 	PaymentType       string `json:"payment_type"`
 	FraudStatus       string `json:"fraud_status"`
+	TransactionTime   string `json:"transaction_time"`
+	GrossAmount       string `json:"gross_amount"`
 }

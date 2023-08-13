@@ -55,7 +55,7 @@ func (s *service) Login(input LoginInput) (User, error) {
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return user, err
+		return user, errors.New("wrong email or password")
 	}
 
 	return user, nil

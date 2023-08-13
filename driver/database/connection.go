@@ -70,7 +70,6 @@ func newClient() *gorm.DB {
 
 	if err = db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(
 		&campaign.Campaign{},
-		&campaign.CampaignImage{},
 		&user.User{},
 		&transaction.Transaction{},
 	); err != nil {

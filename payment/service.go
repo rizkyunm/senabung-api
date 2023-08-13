@@ -37,7 +37,7 @@ func (s *service) GetPaymentURL(transaction Transaction, user user.User) (string
 			FName: user.Name,
 		},
 		TransactionDetails: midtrans.TransactionDetails{
-			OrderID:  strconv.Itoa(int(transaction.ID)),
+			OrderID:  transaction.ID,
 			GrossAmt: int64(transaction.Amount),
 		},
 	}

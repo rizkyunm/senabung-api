@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/rizkyunm/senabung-api/campaign"
 	"github.com/rizkyunm/senabung-api/helper"
+	"github.com/rizkyunm/senabung-api/mail"
 	"github.com/rizkyunm/senabung-api/transaction"
 	"github.com/rizkyunm/senabung-api/user"
+	"log"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 // catch parameter from URI
@@ -16,12 +19,14 @@ import (
 // repo search data which match with the campaign ID
 
 type transactionHandler struct {
-	service transaction.Service
+	transactionService transaction.Service
+	campaignService    campaign.Service
 }
 
-func NewTransactionHandler(service transaction.Service) *transactionHandler {
+func NewTransactionHandler(transactionService transaction.Service, campaignService campaign.Service) *transactionHandler {
 	return &transactionHandler{
-		service: service,
+		transactionService: transactionService,
+		campaignService:    campaignService,
 	}
 }
 
@@ -29,15 +34,15 @@ func (h *transactionHandler) GetCampaignTransactions(c *gin.Context) {
 	var input transaction.GetCampaignTransactionsInput
 
 	if err := c.ShouldBindUri(&input); err != nil {
+		fmt.Println(err)
 		response := helper.APIResponse("Failed to get campaigns's transaction", http.StatusBadRequest, "error", nil)
 		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	input.User = c.MustGet("current_user").(user.User)
-
-	transactions, err := h.service.GetTransactionsByCampaignID(input)
+	transactions, err := h.transactionService.GetTransactionsByCampaignID(input)
 	if err != nil {
+		fmt.Println(err)
 		response := helper.APIResponse("Failed to get campaigns's transaction", http.StatusBadRequest, "error", nil)
 		c.JSON(http.StatusBadRequest, response)
 		return
@@ -48,15 +53,10 @@ func (h *transactionHandler) GetCampaignTransactions(c *gin.Context) {
 }
 
 func (h *transactionHandler) GetUserTransactions(c *gin.Context) {
-	// handler : catch user from JWT
-	// get userID
-	// service
-	// repo : catch data transaction (preload campaign)
-
 	currentUser := c.MustGet("current_user").(user.User)
 	userID := currentUser.ID
 
-	transactions, err := h.service.GetTransactionsByUserID(userID)
+	transactions, err := h.transactionService.GetTransactionsByUserID(userID)
 	if err != nil {
 		response := helper.APIResponse("Failed to get user's transaction", http.StatusBadRequest, "error", nil)
 		c.JSON(http.StatusBadRequest, response)
@@ -84,10 +84,10 @@ func (h *transactionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	currentUser := c.MustGet("currentUser").(user.User)
+	currentUser := c.MustGet("current_user").(user.User)
 	input.User = currentUser
 
-	newTransaction, err := h.service.CreateTransaction(input)
+	newTransaction, err := h.transactionService.CreateTransaction(input)
 	if err != nil {
 		response := helper.APIResponse("Failed to create transaction", http.StatusBadRequest, "error", nil)
 		c.JSON(http.StatusBadRequest, response)
@@ -107,10 +107,21 @@ func (h *transactionHandler) GetNotification(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ProcessPayment(input); err != nil {
+	trx, err := h.transactionService.GetTransactionByOrderID(input.OrderID)
+	if err != nil {
 		response := helper.APIResponse("Failed to process notification", http.StatusBadRequest, "error", nil)
 		c.JSON(http.StatusBadRequest, response)
 		return
+	}
+
+	if err = h.transactionService.ProcessPayment(input, trx); err != nil {
+		response := helper.APIResponse("Failed to process notification", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	if err = mail.SendThankYouEmail(trx, input); err != nil {
+		log.Println(err)
 	}
 
 	c.JSON(http.StatusOK, input)

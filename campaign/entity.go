@@ -35,22 +35,14 @@ func (r CampaignStatus) MarshalJSON() ([]byte, error) {
 type Campaign struct {
 	gorm.Model
 	UserID           uint
-	Name             string          `gorm:"type:varchar(100)"`
-	ShortDescription string          `gorm:"type:text"`
-	Description      string          `gorm:"type:text"`
-	Perks            string          `gorm:"type:varchar(255)"`
-	BackerCount      int             `gorm:"type:int"`
-	GoalAmount       float64         `gorm:"type:decimal(10,2)"`
-	CurrentAmount    float64         `gorm:"type:decimal(10,2)"`
-	Slug             string          `gorm:"type:varchar(255);index"`
-	Status           CampaignStatus  `gorm:"type:varchar(20)"`
-	CampaignImages   []CampaignImage `gorm:"foreignKey:CampaignID"`
-	User             user.User       `gorm:"foreignKey:UserID"`
-}
-
-type CampaignImage struct {
-	gorm.Model
-	CampaignID uint
-	FileName   string `gorm:"type:varchar(255)"`
-	IsPrimary  int    `gorm:"type:tinyint"`
+	Name             string         `gorm:"type:varchar(100)"`
+	ShortDescription string         `gorm:"type:text"`
+	Description      string         `gorm:"type:text"`
+	BackerCount      int            `gorm:"type:int"`
+	GoalAmount       float64        `gorm:"type:decimal(10,2)"`
+	CurrentAmount    float64        `gorm:"type:decimal(10,2)"`
+	Slug             string         `gorm:"type:varchar(255);index"`
+	CampaignImage    string         `gorm:"type:varchar(255)"`
+	Status           CampaignStatus `gorm:"type:varchar(20)"`
+	User             user.User      `gorm:"foreignKey:UserID"`
 }

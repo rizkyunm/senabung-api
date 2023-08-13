@@ -1,6 +1,14 @@
 package helper
 
-import "github.com/go-playground/validator/v10"
+import (
+	"crypto/rand"
+	"github.com/go-playground/validator/v10"
+	"math/big"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+)
 
 type Response struct {
 	Meta Meta        `json:"meta"`
@@ -39,4 +47,28 @@ func FormatValidationError(err error) []string {
 	}
 
 	return errors
+}
+
+func FormatCommas(str string) string {
+	re := regexp.MustCompile("(\\d+)(\\d{3})")
+	for n := ""; n != str; {
+		n = str
+		str = re.ReplaceAllString(str, "$1,$2")
+	}
+	return str
+}
+
+func GenerateOrderID(campaignID uint) string {
+	now := time.Now().Format("2006-01-02 15:04:05")
+	nowSplit := strings.Split(now, " ")
+	date := nowSplit[0]
+	dateSplit := strings.Split(date, "-")
+	campaignFormat := 1000 + campaignID
+	camp := []byte(strconv.FormatInt(int64(campaignFormat), 10))
+	year := []byte(dateSplit[0])
+
+	unique, _ := rand.Int(rand.Reader, big.NewInt(100))
+	seq := strconv.FormatInt(unique.Int64(), 10)
+
+	return "TRX-" + string(camp[1:]) + string(year[2:]) + dateSplit[1] + seq
 }
