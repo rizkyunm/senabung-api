@@ -1,9 +1,8 @@
 package helper
 
 import (
-	"crypto/rand"
 	"github.com/go-playground/validator/v10"
-	"math/big"
+	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
@@ -67,8 +66,9 @@ func GenerateOrderID(campaignID uint) string {
 	camp := []byte(strconv.FormatInt(int64(campaignFormat), 10))
 	year := []byte(dateSplit[0])
 
-	unique, _ := rand.Int(rand.Reader, big.NewInt(100))
-	seq := strconv.FormatInt(unique.Int64(), 10)
+	rand.Seed(time.Now().UnixNano())
+	unique := rand.Intn(900) + 100
+	seq := strconv.FormatInt(int64(unique), 10)
 
 	return "TRX-" + string(camp[1:]) + string(year[2:]) + dateSplit[1] + seq
 }
