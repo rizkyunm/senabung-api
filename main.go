@@ -86,7 +86,7 @@ func main() {
 	api.GET("/campaigns/slug/:slug", campaignHandler.GetCampaignBySlug)
 	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
 	api.PUT("/campaigns/:id", authMiddleware(authService, userService), campaignHandler.UpdateCampaign)
-	api.POST("/campaign/:id/upload", authMiddleware(authService, userService), campaignHandler.UploadImage)
+	api.POST("/campaigns/:id/upload", authMiddleware(authService, userService), campaignHandler.UploadImage)
 	api.GET("/campaigns/highlight", campaignHandler.GetHighlightCampaigns)
 
 	// transaction Handler

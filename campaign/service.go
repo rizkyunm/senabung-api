@@ -72,11 +72,13 @@ func (s *service) GetCampaignBySlug(input GetCampaignDetailBySlug) (Campaign, er
 }
 
 func (s *service) CreateCampaign(input CreateCampaignInput) (Campaign, error) {
+	goalAmount, _ := input.GoalAmount.Float64()
+
 	campaign := Campaign{
 		Name:             input.Name,
 		ShortDescription: input.ShortDescription,
 		Description:      input.Description,
-		GoalAmount:       input.GoalAmount,
+		GoalAmount:       goalAmount,
 		UserID:           input.User.ID,
 		CampaignImage:    input.CampaignImage,
 		Status:           Progress,
@@ -99,11 +101,13 @@ func (s *service) UpdateCampaign(inputID GetCampaignDetailInput, inputData Creat
 		return campaign, err
 	}
 
+	goalAmount, _ := inputData.GoalAmount.Float64()
+
 	campaign.Name = inputData.Name
 	campaign.ShortDescription = inputData.ShortDescription
 	campaign.Description = inputData.Description
 	campaign.CampaignImage = inputData.CampaignImage
-	campaign.GoalAmount = inputData.GoalAmount
+	campaign.GoalAmount = goalAmount
 
 	updateCampaign, err := s.repository.Update(campaign)
 	if err != nil {

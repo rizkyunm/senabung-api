@@ -121,12 +121,6 @@ func (h *campaignHandler) GetCampaignBySlug(c *gin.Context) {
 }
 
 func (h *campaignHandler) CreateCampaign(c *gin.Context) {
-	// catch parameter from user to struct input
-	// catch current user from JWT
-	// call service
-	// call repository
-	// save new campaign to db
-
 	var input campaign.CreateCampaignInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -138,7 +132,7 @@ func (h *campaignHandler) CreateCampaign(c *gin.Context) {
 		return
 	}
 
-	currentUser := c.MustGet("currentUser").(user.User)
+	currentUser := c.MustGet("current_user").(user.User)
 
 	input.User = currentUser
 

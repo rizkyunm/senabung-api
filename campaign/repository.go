@@ -33,7 +33,7 @@ func (r *repository) FindAll() ([]Campaign, error) {
 func (r *repository) GetHighlight() ([]Campaign, error) {
 	var campaigns []Campaign
 
-	if err := r.db.Find(&campaigns).Limit(6).Order("created_at desc").Error; err != nil {
+	if err := r.db.Order("created_at desc").Limit(6).Find(&campaigns).Error; err != nil {
 		return campaigns, err
 	}
 
