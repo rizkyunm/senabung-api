@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"fmt"
 	"github.com/rizkyunm/senabung-api/user"
 	"os"
 	"strconv"
@@ -26,6 +27,8 @@ func (s *service) GetPaymentURL(transaction Transaction, user user.User) (string
 	midclient.ServerKey = os.Getenv("MIDTRANS_SERVER_KEY")
 	midclient.ClientKey = os.Getenv("MIDTRANS_CLIENT_KEY")
 	midclient.APIEnvType = midtrans.EnvironmentType(midenv)
+
+	fmt.Println("sKey", midclient.ServerKey)
 
 	snapGateway := midtrans.SnapGateway{
 		Client: midclient,
