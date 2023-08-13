@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"github.com/rizkyunm/senabung-api/campaign"
 	"github.com/rizkyunm/senabung-api/helper"
 	"github.com/rizkyunm/senabung-api/payment"
@@ -84,6 +85,7 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 
 	paymentURL, err := s.paymentService.GetPaymentURL(paymentTransaction, input.User)
 	if err != nil {
+		fmt.Println(err)
 		return newTransaction, err
 	}
 
